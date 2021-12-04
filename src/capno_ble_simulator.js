@@ -7,8 +7,10 @@ var bleno = require("bleno-mac");
 var deviceName = "Capno-255" // device name will always be Capno-XXXX where XXXX is serial id in hex
 var isSubscribed = false
 var isSendCalibration = false
+var isDataStreamingOn = false
+var doStopAdvertisement = false
 const writeLength = 20
-const readLength = 64
+const readLength = 60
 var dataToWrite = Buffer.alloc(writeLength, 0x00)
 var dataToSend = Buffer.alloc(readLength, 0x00)
 
@@ -69,13 +71,13 @@ function delayedNotification(callback) {
             if (isSendCalibration)
             {
                 isSendCalibration = false
-                isSubscribed = false
-                calibrationData = new Buffer.alloc(64, 0xff)
+                if (!isDataStreamingOn)
+                {
+                  isSubscribed = false
+                }
+                calibrationData = new Buffer.alloc(readLength, 0xff)
                 calibrationData.writeUInt8( 0x77, 0 );
-                // for ( var i = 1; i < 10 ; i++)
-                // {
-                //     dataToSend.writeUInt8( i, 0xFF );
-                // }
+                
               callback(calibrationData)
             }
             else
@@ -102,49 +104,43 @@ function delayedNotification(callback) {
                     var samplePpg = 50                    
                     // each sensor value is 2-byte.
                     // for each 60 byte in 200-mileseonds, there are 10 CO2 samples at 0, 6, 12, ... 54. 
-                    dataToSend.writeUInt16LE( sampleCo2, index)                  
+                    dataToSend.writeUInt16BE( sampleCo2, index)                  
                 }
                 else if ( (i - 1) % 3 === 0)
                 {
                   // for each 60 byte in 200-mileseonds, there are 10 PPG samples at 2, 8, 16, ... 56. 
-                  dataToSend.writeUInt16LE( samplePpg, index ) 
+                  dataToSend.writeUInt16BE( samplePpg, index ) 
                 }
                 else if ( i == 2 || i == 17 )
                 {
-                  dataToSend.writeUInt16LE( temperature, index ) 
+                  dataToSend.writeUInt16BE( temperature, index ) 
                 }
                 else if ( i == 5 || i == 20 )
                 {
-                  dataToSend.writeUInt16LE( humidity, index) 
+                  dataToSend.writeUInt16BE( humidity, index) 
                 }
                 else if ( i == 8 || i == 23 )
                 {
-                  dataToSend.writeUInt16LE( pressure, index) 
+                  dataToSend.writeUInt16BE( pressure, index) 
                 }
                 else if ( i == 11 || i == 26 )
                 {
-                  dataToSend.writeUInt16LE( bpm, index) 
+                  dataToSend.writeUInt16BE( bpm, index) 
                 }
                 else if ( i == 14 )
                 {
-                  dataToSend.writeUInt16LE( battery, index) 
+                  dataToSend.writeUInt16BE( battery, index) 
                 }
                 else if ( i == 29 )
                 {
-                  dataToSend.writeUInt16LE( frames, index) 
+                  dataToSend.writeUInt16BE( frames, index) 
                 }
               }
               callback(dataToSend)
             }			
 		}
     delayedNotification(callback);
-    // else
-    // {
-    //   console.log("Send 'Get Data' request first")
-    //   var data = new Buffer.alloc(readLength, 0x00)
-    //   callback(data)
-		// 	delayedNotification(callback);
-    // }
+   
 
 	}, 200 );
 }
@@ -160,7 +156,7 @@ var WriteCharacteristic = function() {
   });
 
 
-  this._value = new Buffer(0);
+  this._value = new Buffer.alloc(1,0x00);
   this._updateValueCallback = null;
 };
 
@@ -181,6 +177,8 @@ WriteCharacteristic.prototype.onWriteRequest = function(
     {
         // Start data stream 
         isSubscribed = true
+        isSendCalibration = false
+        isDataStreamingOn = true
         totalSamples = 0;
         console.log("Start data streaming now...")
     }
@@ -188,6 +186,8 @@ WriteCharacteristic.prototype.onWriteRequest = function(
     {
         // stop data stream 
         isSubscribed = false
+        isSendCalibration = false
+        isDataStreamingOn = false
         console.log("Stop data streaming now...\nSend: ", totalSamples, " samples")        
     } else if (this._value.readUInt8(0) == 0x80)
     {
@@ -232,4 +232,11 @@ bleno.on("advertisingStart", function(error) {
       })
     ]);
   }
+});
+
+
+bleno.on('connect', function(error)
+{
+  if (error) { console.log("Connection error!")}
+  console.log("Connected!!")
 });
