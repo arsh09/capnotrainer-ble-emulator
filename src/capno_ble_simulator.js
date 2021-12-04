@@ -175,16 +175,16 @@ WriteCharacteristic.prototype.onWriteRequest = function(
   this._value = data;
 
   console.log("Write Request Received: ", this._value, this._value.readUInt8(0))
-  if (this._value.length === writeLength)
+  if (this._value.length <= writeLength)
   {
-    if (this._value.readUInt8(0) == 0xf8)
+    if (this._value.readUInt8(0) == 0x8F)
     {
         // Start data stream 
         isSubscribed = true
         totalSamples = 0;
         console.log("Start data streaming now...")
     }
-    else if (this._value.readUInt8(0) == 0x8f)
+    else if (this._value.readUInt8(0) == 0xF8)
     {
         // stop data stream 
         isSubscribed = false
