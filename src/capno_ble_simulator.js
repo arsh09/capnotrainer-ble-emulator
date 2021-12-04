@@ -4,7 +4,7 @@ var bleno = require("bleno-mac");
 // --------------------------------------------------//
 // ------------------ CAPNO SIMULATOR ---------------//
 // --------------------------------------------------//
-var deviceName = "Capno-256" // device name will always be Capno-XXXX where XXXX is serial id in hex
+var deviceName = "Capno-255" // device name will always be Capno-XXXX where XXXX is serial id in hex
 var isSubscribed = false
 var isSendCalibration = false
 const writeLength = 20
