@@ -15,8 +15,8 @@ Start your Bluetooth on MacOS
 
 ```bash
 $ cd ~/Documents/
-$ git clone <git-link>
-$ cd <project-name>
+$ git clone -b main https://github.com/arsh09/capnotrainer-ble-emulator.git
+$ cd capnotrainer-ble-emulator
 $ npm install
 $ npm run capno
 ```
