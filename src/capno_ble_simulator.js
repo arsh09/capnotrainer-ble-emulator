@@ -4,11 +4,11 @@ var bleno = require("bleno-mac");
 // --------------------------------------------------//
 // ------------------ CAPNO SIMULATOR ---------------//
 // --------------------------------------------------//
-var deviceName = "Capno-XXXX" // device name will always be Capno-XXXX where XXXX is serial id in hex
+var deviceName = "Capno-256" // device name will always be Capno-XXXX where XXXX is serial id in hex
 var isSubscribed = false
 var isSendCalibration = false
-const writeLength = 1
-const readLength = 60
+const writeLength = 20
+const readLength = 64
 var dataToWrite = Buffer.alloc(writeLength, 0x00)
 var dataToSend = Buffer.alloc(readLength, 0x00)
 
@@ -31,7 +31,7 @@ var ReadCharacteristic = function() {
   });
 
 
-  this._value = new Buffer(0);
+  this._value = new Buffer.alloc(1,0x00);
   this._updateValueCallback = null;
 };
 
@@ -69,10 +69,14 @@ function delayedNotification(callback) {
             if (isSendCalibration)
             {
                 isSendCalibration = false
-                for ( var i = 0; i < 10 ; i++)
-                {
-                    dataToSend.writeUInt8( 0, 0xFF );
-                }
+                isSubscribed = false
+                calibrationData = new Buffer.alloc(64, 0xff)
+                calibrationData.writeUInt8( 0x77, 0 );
+                // for ( var i = 1; i < 10 ; i++)
+                // {
+                //     dataToSend.writeUInt8( i, 0xFF );
+                // }
+              callback(calibrationData)
             }
             else
             {
@@ -130,18 +134,17 @@ function delayedNotification(callback) {
                   dataToSend.writeUInt16LE( frames, index) 
                 }
               }
-            }
-            
-			callback(dataToSend);
-			delayedNotification(callback);
+              callback(dataToSend)
+            }			
 		}
-    else
-    {
-      console.log("Send 'Get Data' request first")
-      var data = new Buffer.alloc(readLength, 0x00)
-      callback(data)
-			delayedNotification(callback);
-    }
+    delayedNotification(callback);
+    // else
+    // {
+    //   console.log("Send 'Get Data' request first")
+    //   var data = new Buffer.alloc(readLength, 0x00)
+    //   callback(data)
+		// 	delayedNotification(callback);
+    // }
 
 	}, 200 );
 }
@@ -190,6 +193,7 @@ WriteCharacteristic.prototype.onWriteRequest = function(
     {
         // send calibration data
         isSendCalibration = true
+        isSubscribed = true
         console.log("Send calibration data now...")        
     }
   }
